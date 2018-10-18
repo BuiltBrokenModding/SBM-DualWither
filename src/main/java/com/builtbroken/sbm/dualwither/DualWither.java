@@ -4,7 +4,8 @@ import net.minecraft.entity.boss.EntityWither;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -114,26 +115,31 @@ public class DualWither
         wither.getEntityData().setString(NBT_SPAWN_CHECK, "secondary");
         wither.getEntityData().setInteger(NBT_SPAWN_HOST, mainWither.getEntityId());
 
-        if (placeWither(player, wither))
+        if (placeWither(player, wither)) //TODO randomize to prevent 50+ withers from spawning at once
         {
             spawnWither(wither);
+            player.sendStatusMessage(new TextComponentString("\u00A7cBehind you"), true);
         }
     }
 
     protected static boolean placeWither(EntityPlayerMP player, EntityWither wither)
     {
-        int i = MathHelper.floor(player.posX) - 5; //TODO place behind player
-        int j = MathHelper.floor(player.posZ) - 5;
-        int k = MathHelper.floor(player.getEntityBoundingBox().minY);
+        Vec3d offset = new Vec3d(0, 0, -1D);
+        offset = offset.rotateYaw(-player.rotationYawHead * 0.017453292F);
 
-        for (int offsetX = 0; offsetX <= 10; ++offsetX)
+        int x = (int)Math.floor(player.posX);
+        int y = (int)Math.floor(player.posY) + 1;
+        int z = (int)Math.floor(player.posZ);
+
+        for (int d = 10; d > 0; d--)
         {
-            for (int offsetZ = 0; offsetZ <= 10; ++offsetZ)
+            for (int h = -2; h<=4; h++)
             {
-                if (canPlaceWitherHere(player.world, i, j, k, offsetX, offsetZ))
+                Vec3d placeOffset = offset.scale(d);
+                if (canPlaceWitherHere(player.world, x, y + h, z, (int) placeOffset.x, (int) placeOffset.z))
                 {
-                    wither.setLocationAndAngles((double) ((float) (i + offsetX) + 0.5F), (double) k, (double) ((float) (j + offsetZ) + 0.5F), wither.rotationYaw, wither.rotationPitch);
-                    wither.getNavigator().clearPath();
+                    placeOffset = placeOffset.add(player.posX, player.posY + h, player.posZ);
+                    wither.setLocationAndAngles(placeOffset.x, placeOffset.y, placeOffset.z, player.rotationYawHead, 0);
                     return true;
                 }
             }
@@ -143,6 +149,7 @@ public class DualWither
 
     protected static boolean canPlaceWitherHere(World world, int x, int z, int y, int xOffset, int zOffset)
     {
+        //TODO raytrace to ensure wither is still in line of sight
         BlockPos blockpos = new BlockPos(x + xOffset, y, z + zOffset);
         return world.isAirBlock(blockpos) && world.isAirBlock(blockpos.up()) && world.isAirBlock(blockpos.up(2));
     }
