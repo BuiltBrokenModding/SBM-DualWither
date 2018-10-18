@@ -1,0 +1,18 @@
+[{
+    "modid": "sbmdualwither",
+    "name": "SBM Dual Wither",
+    "description": "Spawns additional wither bosses for any vanilla spawned boss",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "http://builtbroken.com/",
+    "updateUrl": "",
+    "authors": ["DarkCow"],
+    "credits": "Dmod",
+    "logoFile": "",
+    "screenshots": [],
+    "parent": "",
+    "requiredMods": [],
+    "dependencies": [],
+    "dependants": [],
+    "useDependencyInformation": "false"
+}]

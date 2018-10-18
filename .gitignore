@@ -1,0 +1,16 @@
+
+out/
+
+\.gradle/
+
+run/
+
+build/
+
+*.iws
+
+*.ipr
+
+SBM-Dual-Wither\.txt
+
+*.iml
