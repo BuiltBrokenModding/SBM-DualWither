@@ -1,5 +1,7 @@
 package com.builtbroken.sbm.dualwither;
 
+import java.util.HashSet;
+
 import net.minecraft.entity.boss.EntityWither;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.DamageSource;
@@ -10,17 +12,15 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
-import java.util.HashSet;
 
 /**
  * @see <a href="https://github.com/BuiltBrokenModding/VoltzEngine/blob/development/license.md">License</a> for what you can and can't do with the code.
  * Created by Dark(DarkGuardsman, Robert) on 10/18/2018.
  */
-@Mod(modid = DualWither.DOMAIN, acceptableRemoteVersions = "*")
-@Mod.EventBusSubscriber()
+@Mod(DualWither.DOMAIN)
+@Mod.EventBusSubscriber
 public class DualWither
 {
     public static final String DOMAIN = "sbmdualwither";
@@ -29,13 +29,13 @@ public class DualWither
     public static final String NBT_SPAWN_CHECK = PREFIX + "spawned";
     public static final String NBT_SPAWN_HOST = PREFIX + "host";
 
-    private static final HashSet<EntityWither> ignoreList = new HashSet();
+    private static final HashSet<EntityWither> ignoreList = new HashSet<>();
 
     @SubscribeEvent
     public static void onEntitySpawned(LivingSpawnEvent event)
     {
         //Track withers spawned by mob spawners
-        if (!event.getWorld().isRemote && event.getEntity() instanceof EntityWither)
+        if (!event.getWorld().isRemote() && event.getEntity() instanceof EntityWither)
         {
             ignoreList.add((EntityWither) event.getEntity());
         }
@@ -44,7 +44,7 @@ public class DualWither
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinWorldEvent event)
     {
-        if (!event.getWorld().isRemote && event.getEntity() instanceof EntityWither)
+        if (!event.getWorld().isRemote() && event.getEntity() instanceof EntityWither)
         {
             //Ignore mob spawner entities
             if (ignoreList.contains(event.getEntity()))
@@ -56,9 +56,9 @@ public class DualWither
             EntityWither wither = (EntityWither) event.getEntity();
 
             //Only trigger on newly spawned withers
-            if (!wither.getEntityData().hasKey(NBT_SPAWN_CHECK) && wither.ticksExisted < 1)
+            if (!wither.getEntityData().contains(NBT_SPAWN_CHECK) && wither.ticksExisted < 1)
             {
-                wither.getEntityData().setString(NBT_SPAWN_CHECK, "main");
+                wither.getEntityData().putString(NBT_SPAWN_CHECK, "main");
                 spawnSecondaryWithers(wither);
             }
         }
@@ -103,7 +103,7 @@ public class DualWither
 
     protected static void spawnSecondaryWithers(EntityWither mainWither)
     {
-        for (EntityPlayerMP entityplayermp : mainWither.world.getEntitiesWithinAABB(EntityPlayerMP.class, mainWither.getEntityBoundingBox().grow(50.0D)))
+        for (EntityPlayerMP entityplayermp : mainWither.world.getEntitiesWithinAABB(EntityPlayerMP.class, mainWither.getBoundingBox().grow(50.0D)))
         {
             spawnWithOnPlayer(entityplayermp, mainWither);
         }
@@ -112,8 +112,8 @@ public class DualWither
     protected static void spawnWithOnPlayer(EntityPlayerMP player, EntityWither mainWither)
     {
         EntityWither wither = new EntityWither(player.world);
-        wither.getEntityData().setString(NBT_SPAWN_CHECK, "secondary");
-        wither.getEntityData().setInteger(NBT_SPAWN_HOST, mainWither.getEntityId());
+        wither.getEntityData().putString(NBT_SPAWN_CHECK, "secondary");
+        wither.getEntityData().putInt(NBT_SPAWN_HOST, mainWither.getEntityId());
 
         if (placeWither(player, wither)) //TODO randomize to prevent 50+ withers from spawning at once
         {
