@@ -2,12 +2,13 @@ package com.builtbroken.sbm.dualwither;
 
 import java.util.HashSet;
 
-import net.minecraft.entity.boss.EntityWither;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -29,22 +30,22 @@ public class DualWither
     public static final String NBT_SPAWN_CHECK = PREFIX + "spawned";
     public static final String NBT_SPAWN_HOST = PREFIX + "host";
 
-    private static final HashSet<EntityWither> ignoreList = new HashSet<>();
+    private static final HashSet<WitherEntity> ignoreList = new HashSet<>();
 
     @SubscribeEvent
     public static void onEntitySpawned(LivingSpawnEvent event)
     {
         //Track withers spawned by mob spawners
-        if (!event.getWorld().isRemote() && event.getEntity() instanceof EntityWither)
+        if (!event.getWorld().isRemote() && event.getEntity() instanceof WitherEntity)
         {
-            ignoreList.add((EntityWither) event.getEntity());
+            ignoreList.add((WitherEntity) event.getEntity());
         }
     }
 
     @SubscribeEvent
     public static void onEntityJoinWorld(EntityJoinWorldEvent event)
     {
-        if (!event.getWorld().isRemote() && event.getEntity() instanceof EntityWither)
+        if (!event.getWorld().isRemote() && event.getEntity() instanceof WitherEntity)
         {
             //Ignore mob spawner entities
             if (ignoreList.contains(event.getEntity()))
@@ -53,7 +54,7 @@ public class DualWither
                 return;
             }
 
-            EntityWither wither = (EntityWither) event.getEntity();
+            WitherEntity wither = (WitherEntity) event.getEntity();
 
             //Only trigger on newly spawned withers
             if (!wither.getEntityData().contains(NBT_SPAWN_CHECK) && wither.ticksExisted < 1)
@@ -68,15 +69,15 @@ public class DualWither
     public static void onEntityHurt(LivingHurtEvent event)
     {
         //Block damage caused by other withers
-        if (event.getEntity() instanceof EntityWither && shouldBlockDamage((EntityWither) event.getEntity(), event.getSource()))
+        if (event.getEntity() instanceof WitherEntity && shouldBlockDamage((WitherEntity) event.getEntity(), event.getSource()))
         {
-            if (event.getSource().getImmediateSource() instanceof EntityWither)
+            if (event.getSource().getImmediateSource() instanceof WitherEntity)
             {
-                ((EntityWither) event.getSource().getImmediateSource()).setAttackTarget(null);
+                ((WitherEntity) event.getSource().getImmediateSource()).setAttackTarget(null);
             }
-            else if (event.getSource().getTrueSource() instanceof EntityWither)
+            else if (event.getSource().getTrueSource() instanceof WitherEntity)
             {
-                ((EntityWither) event.getSource().getTrueSource()).setAttackTarget(null);
+                ((WitherEntity) event.getSource().getTrueSource()).setAttackTarget(null);
             }
             if (event.isCancelable())
             {
@@ -85,14 +86,14 @@ public class DualWither
         }
     }
 
-    protected static boolean shouldBlockDamage(EntityWither wither, DamageSource source)
+    protected static boolean shouldBlockDamage(WitherEntity wither, DamageSource source)
     {
-        if (source.getImmediateSource() instanceof EntityWither)
+        if (source.getImmediateSource() instanceof WitherEntity)
         {
             //allow self harm
             return source.getImmediateSource() != wither;
         }
-        else if (source.getTrueSource() instanceof EntityWither)
+        else if (source.getTrueSource() instanceof WitherEntity)
         {
             //allow self harm
             return source.getTrueSource() != wither;
@@ -101,28 +102,28 @@ public class DualWither
     }
 
 
-    protected static void spawnSecondaryWithers(EntityWither mainWither)
+    protected static void spawnSecondaryWithers(WitherEntity mainWither)
     {
-        for (EntityPlayerMP entityplayermp : mainWither.world.getEntitiesWithinAABB(EntityPlayerMP.class, mainWither.getBoundingBox().grow(50.0D)))
+        for (ServerPlayerEntity entityplayermp : mainWither.world.getEntitiesWithinAABB(ServerPlayerEntity.class, mainWither.getBoundingBox().grow(50.0D)))
         {
             spawnWithOnPlayer(entityplayermp, mainWither);
         }
     }
 
-    protected static void spawnWithOnPlayer(EntityPlayerMP player, EntityWither mainWither)
+    protected static void spawnWithOnPlayer(ServerPlayerEntity player, WitherEntity mainWither)
     {
-        EntityWither wither = new EntityWither(player.world);
+        WitherEntity wither = new WitherEntity(EntityType.WITHER, player.world);
         wither.getEntityData().putString(NBT_SPAWN_CHECK, "secondary");
         wither.getEntityData().putInt(NBT_SPAWN_HOST, mainWither.getEntityId());
 
         if (placeWither(player, wither)) //TODO randomize to prevent 50+ withers from spawning at once
         {
             spawnWither(wither);
-            player.sendStatusMessage(new TextComponentString("\u00A7cBehind you"), true);
+            player.sendStatusMessage(new StringTextComponent("\u00A7cBehind you"), true);
         }
     }
 
-    protected static boolean placeWither(EntityPlayerMP player, EntityWither wither)
+    protected static boolean placeWither(ServerPlayerEntity player, WitherEntity wither)
     {
         Vec3d offset = new Vec3d(0, 0, -1D);
         offset = offset.rotateYaw(-player.rotationYawHead * 0.017453292F);
@@ -154,9 +155,9 @@ public class DualWither
         return world.isAirBlock(blockpos) && world.isAirBlock(blockpos.up()) && world.isAirBlock(blockpos.up(2));
     }
 
-    protected static void spawnWither(EntityWither wither)
+    protected static void spawnWither(WitherEntity wither)
     {
-        wither.world.spawnEntity(wither);
+        wither.world.addEntity(wither);
         //TODO set HP and other values to make wither weaker
     }
 
